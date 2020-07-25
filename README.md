@@ -2,26 +2,29 @@
 An alternative, Python-based client for the now defunct 1994-2015 Fine Cooking Archive
 
 ## How to get and run
+1. Run the following from Terminal
+
+   ```
+   xcode-select --install
+   ```
+
 1. Get python3
-Run the following from Terminal
-```
-xcode-select --install
-```
-[Install version 3.x here](https://www.python.org/downloads/mac-osx/), [or follow this alternative guide](https://docs.python-guide.org/starting/install3/osx/)
 
-2. Get the script
+   [Install version 3.x here](https://www.python.org/downloads/mac-osx/), [or follow this alternative guide](https://docs.python-guide.org/starting/install3/osx/)
 
-```
-git clone https://github.com/jray272/FineCookingArchivePythonClient.git
-```
+1. Get the script
 
-3. Run, learn how to use, and enjoy
+   ```
+   git clone https://github.com/jray272/FineCookingArchivePythonClient.git
+   ```
 
-```
-cd FineCookingArchivePythonClient/
-python3 fine_cooking_archive_client.py --help
-python3 fine_cooking_archive_client.py <search term here>
-```
+1. Run, learn how to use, and enjoy
+
+   ```
+   cd FineCookingArchivePythonClient/
+   python3 fine_cooking_archive_client.py --help
+   python3 fine_cooking_archive_client.py <search term here>
+   ```
 
 
 ## Background
