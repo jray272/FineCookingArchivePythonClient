@@ -23,7 +23,7 @@ An alternative, Python-based client for the now defunct 1994-2015 Fine Cooking A
    ```
    cd FineCookingArchivePythonClient/
    python3 fine_cooking_archive_client.py --help
-   python3 fine_cooking_archive_client.py <search term here>
+   python3 fine_cooking_archive_client.py search text <search term here>
    ```
 
 
@@ -32,6 +32,8 @@ Fine Cooking used to sell a really nice product that was an archive of all of th
 
 Unfortunately, the Mac OS X version of the client was built as a 32-bit Application and thus no longer runs on Catalina (10.15) since 32-bit app support was dropped in this version. As such, the archive is far less useful because it is no longer searchable.
 
-Fortunately, the database used to serve the client is just a sqlite database with a fairly simple schema. Because of this, making an alternative client isn't hard to do and it may even be possible to exceed the original client's feature set (albeit with a command line interface).
+Fortunately, the database used to serve the client is just a sqlite database with a fairly simple schema. Because of this, making an alternative client isn't hard to do (albeit with a command line interface).
 
 The archive is tough to find these days, but may be able to be purchased [here](https://www.amazon.com/Fine-Cooking-2015-Magazine-Archive/dp/1631865978/). The name on the box is *Fine Cooking Magazine Archive 1994 to 2015*.
+
+Created with love for my mom but also as a fun little side project for me.
