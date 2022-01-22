@@ -15,20 +15,105 @@ MONTH_COLUMN = 'MONTH_'
 YEAR_COLUMN = 'YEAR_'
 PDF_COLUMN = 'PDF_'
 PAGE_TEXT = 'c3PAGE_TEXT'
+HEADLINE_COLUMN = 'HEADLINE'
+SUBHEAD_COLUMN = 'SUBHEAD'
+PAGE_NUMBERS_COLUMN = 'PAGE_NUMBERS'
+HIT_COUNT_COLUMN = 'hit_count'
 
 CONTEXT_CHARACTER_COUNT = 40
 
-FULL_SQL_QUERY = """SELECT c1ISSUE_ID, MONTH_, YEAR_, c2PAGE_NUMBER, PDF_, c3PAGE_TEXT FROM ALL_PAGES_content INNER JOIN ISSUES ON ALL_PAGES_content.c1ISSUE_ID = ISSUES.ID WHERE c3PAGE_TEXT like ? ORDER BY c1ISSUE_ID"""
+FULL_SQL_QUERY = """
+    SELECT
+      c1ISSUE_ID,
+      MONTH_,
+      YEAR_,
+      c2PAGE_NUMBER,
+      PDF_,
+      c3PAGE_TEXT
+    FROM
+      ALL_PAGES_content
+    INNER JOIN
+      ISSUES
+    ON
+      ALL_PAGES_content.c1ISSUE_ID = ISSUES.ID
+    WHERE
+      c3PAGE_TEXT like ?
+    ORDER BY
+      c1ISSUE_ID
+"""
 
-COUNT_SQL_QUERY = """SELECT COUNT(docid) as hit_count, c1ISSUE_ID, MONTH_, YEAR_ FROM ALL_PAGES_content INNER JOIN ISSUES ON ALL_PAGES_content.c1ISSUE_ID = ISSUES.ID WHERE c3PAGE_TEXT like "%red pepper%" GROUP BY c1ISSUE_ID ORDER BY hit_count DESC"""
+COUNT_SQL_QUERY = """
+    SELECT
+      COUNT(docid) as hit_count,
+      PDF_,
+      MONTH_,
+      YEAR_
+    FROM
+      ALL_PAGES_content
+    INNER JOIN
+      ISSUES
+    ON
+      ALL_PAGES_content.c1ISSUE_ID = ISSUES.ID
+    WHERE
+      c3PAGE_TEXT like ?
+    GROUP BY
+      c1ISSUE_ID
+    ORDER BY
+      hit_count DESC
+"""
 
+RANDOM_SQL_QUERY = """
+    SELECT
+      HEADLINE,
+      PDF_,
+      PAGE_NUMBERS
+    FROM
+      ARTICLES
+    INNER JOIN
+      ISSUES
+    ON
+      ARTICLES.ISSUE_ID = ISSUES.ID
+    ORDER BY
+      RANDOM()
+    LIMIT 1
+"""
+
+# CATEGORY_B_ID describes the type of article.
+# 7 is "Basics"
+# 14 is "Cuisines / World Cuisines"
+# 28 is "Make it Tonight / Quick & Delicious"
+# 36 is "Recipe"
+# 38 is "Repertoire"
+RECIPE_SQL_QUERY = """
+    SELECT
+      HEADLINE,
+      PDF_,
+      PAGE_NUMBERS
+    FROM
+      ARTICLES
+    INNER JOIN
+      ISSUES
+    ON
+      ARTICLES.ISSUE_ID = ISSUES.ID
+    WHERE
+      (CATEGORY_B_ID = 7 OR
+       CATEGORY_B_ID = 14 OR
+       CATEGORY_B_ID = 28 OR
+       CATEGORY_B_ID = 36 OR
+       CATEGORY_B_ID = 38) AND
+      (HEADLINE like ? OR
+       SUBHEAD like ? OR
+       ABSTRACT like ?)
+    ORDER BY
+      PDF_
+"""
 
 def Help(args, cursor):
   print('This script allows the user to search through the Fine Cooking archive')
   print('In general, the best way to learn about a particular command is to add --help to the command line. For example, if you wanted to learn more about the "search" command, just do: script.py search --help')
 
 
-SEARCH_TEXT_COLUMN_FORMAT = '{:>14}'
+HEADER_TEXT_COLUMN_FORMAT = '{:>14}'
 
 def SearchText(args, cursor):
   search_query = args.search_query
@@ -41,17 +126,17 @@ def SearchText(args, cursor):
 
   rows = cursor.fetchall()
 
-  header_format = SEARCH_TEXT_COLUMN_FORMAT * 5
-
   if len(rows) == 0:
     print('Search query {} returned no results'.format(first_search_query))
     return
+
+  header_format = HEADER_TEXT_COLUMN_FORMAT * 5
 
   print('Printing matches:')
   print(header_format.format(*rows[0].keys()))
 
   for i, row in enumerate(rows):
-    row_format = SEARCH_TEXT_COLUMN_FORMAT * 4
+    row_format = HEADER_TEXT_COLUMN_FORMAT * 4
     lower_page_text = row[PAGE_TEXT].lower()
     page_text = row[PAGE_TEXT]
     search_query_start_location = lower_page_text.find(first_search_query.lower())
@@ -69,7 +154,81 @@ def SearchText(args, cursor):
 
 
 def SearchArticles(args, cursor):
-  print('Unimplemented')
+  search_query = args.search_query
+  first_search_query = search_query[0]
+
+  fuzzy_query = '%{}%'.format(first_search_query)
+
+  cursor.execute(RECIPE_SQL_QUERY, (fuzzy_query, fuzzy_query, fuzzy_query))
+
+  rows = cursor.fetchall()
+
+  if len(rows) == 0:
+    print('Search query {} returned no results'.format(first_search_query))
+    return
+
+  headline_names = [r[HEADLINE_COLUMN] for r in rows]
+  longest_headline_len = max(len(h) for h in headline_names)
+
+  headline_format = '{:<' + str(longest_headline_len) + 's}'
+
+  header_format = headline_format + (HEADER_TEXT_COLUMN_FORMAT * 2)
+
+  print('Printing matches:')
+  print(header_format.format(*rows[0].keys()))
+
+  for i, row in enumerate(rows):
+    print(header_format.format(row[HEADLINE_COLUMN], row[PDF_COLUMN], row[PAGE_NUMBERS_COLUMN]))
+
+
+def Random(args, cursor):
+  cursor.execute(RANDOM_SQL_QUERY)
+
+  rows = cursor.fetchall()
+
+  if len(rows) == 0:
+    print('Search query {} returned no results'.format(first_search_query))
+    return
+
+  headline_names = [r[HEADLINE_COLUMN] for r in rows]
+  longest_headline_len = max(len(h) for h in headline_names)
+
+  headline_format = '{:<' + str(longest_headline_len) + 's}'
+
+  header_format = headline_format + (HEADER_TEXT_COLUMN_FORMAT * 2)
+
+  print('Printing matches:')
+  print(header_format.format(*rows[0].keys()))
+
+  for i, row in enumerate(rows):
+    print(header_format.format(row[HEADLINE_COLUMN], row[PDF_COLUMN], row[PAGE_NUMBERS_COLUMN]))
+
+
+def QueryPrevalence(args, cursor):
+  search_query = args.search_query
+  first_search_query = search_query[0]
+
+  fuzzy_query = '%{}%'.format(first_search_query)
+
+  cursor.execute(COUNT_SQL_QUERY, (fuzzy_query,))
+
+  rows = cursor.fetchall()
+
+  if len(rows) == 0:
+    print('Search query {} returned no results'.format(first_search_query))
+    return
+
+  row_format = '{:<11}{:10}{:8}{:5}'
+
+  print('Printing matches:')
+  print(row_format.format(*rows[0].keys()))
+
+  for i, row in enumerate(rows):
+    print(row_format.format(row[HIT_COUNT_COLUMN], row[PDF_COLUMN], row[MONTH_COLUMN], row[YEAR_COLUMN]))
+
+
+def AddSearchQueryArgumentToParser(parser):
+  parser.add_argument('search_query', help='The search query that you would like to use to search through the database, eg "rosemary"', nargs='+')
 
 
 parser = argparse.ArgumentParser(description='Python based client for the Fine Cooking archive')
@@ -81,17 +240,20 @@ help_parser.set_defaults(func=Help)
 
 search_parser = subparsers.add_parser('search', help='Search through a particular portion of the database')
 
+random_parser = subparsers.add_parser('random', help='Prints out a list of random recipes and their issue/page numbers. Great for the indecisive!')
+random_parser.set_defaults(func=Random)
+
+prevalence_parser = subparsers.add_parser('prevalence', help='Tells you how often your search query occurs in the text of various issues.')
+AddSearchQueryArgumentToParser(prevalence_parser)
+prevalence_parser.set_defaults(func=QueryPrevalence)
+
 search_subparser = search_parser.add_subparsers(help='The portion of the database that you would like to search through.')
-
-def AddSearchQueryArgumentToParser(parser):
-  parser.add_argument('search_query', help='The search query that you would like to use to search through the database, eg "rosemary"', nargs='+')
-
 
 text_parser = search_subparser.add_parser('text', help='Searches through all of the text in all of the Fine Cooking magazine issues and prints out where your search query appears in each issue along with a little context around where that text occurs.')
 text_parser.set_defaults(func=SearchText)
 AddSearchQueryArgumentToParser(text_parser)
 
-articles_parser = search_subparser.add_parser('articles', help='Searches through all article headlines, sub-headlines, and abstracts for the search query and returns where any hits can be found. Note that recipes are a subset of articles, so use this cateogry may be used to search through recipes.')
+articles_parser = search_subparser.add_parser('articles', aliases=['recipes', 'a'], help='Searches through all article headlines, sub-headlines, and abstracts for the search query and returns where any hits can be found. Note that recipes are a subset of articles, so use this cateogry may be used to search through recipes.')
 articles_parser.set_defaults(func=SearchArticles)
 AddSearchQueryArgumentToParser(articles_parser)
 
@@ -113,7 +275,7 @@ conn.row_factory = sqlite3.Row
 cursor = conn.cursor()
 
 # TODO: Handle multiple search queries.
-if len(args.search_query) != 1:
+if 'search_query' in vars(args) and len(args.search_query) != 1:
   print('WARNING: only a single search term is supported at this time. The '
         'following search terms are being ignored: {}', search_query[1:])
   print('If you have a multi-word search term that you would like to search '
